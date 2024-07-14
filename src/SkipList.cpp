@@ -15,7 +15,6 @@ SkipList<K, V>::SkipList(int maxLevel, float prob) : maxLevel(maxLevel), p(prob)
 {
   K minKey{};
   head = std::make_shared<Node>(minKey, V{}, maxLevel);
-  std::cout << "SkipList created with maxLevel: " << maxLevel << ", prob: " << prob << std::endl;
 }
 
 /*****************************************************************************/
@@ -66,7 +65,7 @@ std::optional<V> SkipList<K, V>::get(const K &key) const
 	  curr = curr->forward[i];
 
   curr = curr->forward[0];
-  if (curr && curr->key == key)
+  if (curr && curr->key == key && curr->value != TOMBSTONE)
 	return curr->value;
 
   return std::nullopt;

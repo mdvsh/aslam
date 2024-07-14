@@ -1,6 +1,6 @@
 ## aslam
 
-> a log-structured merge tree storage engine in modern c++
+> a concurrent log-structured merge tree storage engine in modern c++
 
 implements:
 - `Put(k, v)`
@@ -10,7 +10,7 @@ implements:
 
 uses level compaction, with a write-ahead log for durability
 
-implements lock-free skiplist based memtable for fast writes.
+implements lock-free (templated) skiplist based memtable for fast writes.
 
 ### build
 
@@ -21,9 +21,15 @@ $ cmake ..
 $ make
 ```
 
+---
+
 #### todo
 
 - [x] memtable
+  - [x] freezing and multiple tables
+  - [x] concurrency
+    - [x] stress test for correctness
+    - [ ] todo: fix delete with multiple tables
 - [ ] mergeiterator
 - [ ] sorted strign table (sst) encoding
 - [ ] compaction and persistence

@@ -8,6 +8,7 @@
 #include "SkipList.h"
 
 #include <atomic>
+#include <shared_mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,7 +17,8 @@ class MemTable {
  private:
   SkipList<std::string, std::vector<uint8_t>> map;
   size_t _id;
-  std::atomic<size_t> approx_size;
+  std::atomic<size_t> approxSize;
+  mutable std::shared_mutex rwMutex;
 
  public:
   MemTable(size_t id);
@@ -30,7 +32,7 @@ class MemTable {
   void PrintStructure() const;
 
   size_t GetId() const { return _id; }
-  size_t GetApproxSize() const { return approx_size.load(std::memory_order_relaxed); }
+  size_t GetApproxSize() const { return approxSize.load(std::memory_order_relaxed); }
 
   // wrapper over SkipList
   class Iterator {

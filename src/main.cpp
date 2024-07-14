@@ -1,26 +1,83 @@
 #include <iostream>
+#include <thread>
 
+#include "LSMStore.h"
 #include "MemTable.h"
+
+// for concurrent reads logging
+struct ReadResult {
+  int key;
+  bool found;
+  std::string value;
+};
+
+void concurrent_writes(LSMStore &storage, int start, int end) {
+  for (int i = start; i <= end; ++i) {
+	storage.Put("key" + std::to_string(i), "value" + std::to_string(i));
+  }
+}
+
+void concurrent_reads(const LSMStore &storage, int start, int end, std::vector<ReadResult> &results) {
+  for (int i = start; i <= end; ++i) {
+	auto result = storage.Get("key" + std::to_string(i));
+	results.push_back({i, result.has_value(), result ? std::string(result->begin(), result->end()) : ""});
+  }
+}
 
 int main() {
   std::cout << "aslam — an lsm tree storage engine...\n\n";
 
-  MemTable table(1);
-  table.Put("key1", "value1");
-  table.PrintStructure();
-  table.Put("key2", "value2");
-  table.PrintStructure();
-  table.Put("key3", "value3");
-  table.PrintStructure();
+  LSMStore storage(1024);// 1KB memtable size limit
 
-  auto value1 = table.Get("key1");
-  if (value1) {
-	std::cout << "Value for key1: " << std::string(value1->begin(), value1->end()) << std::endl;
-	table.PrintStructure();
+  // 5 threads to write 500 k-v
+  std::vector<std::thread> write_threads;
+  write_threads.reserve(5);
+  for (int i = 0; i < 5; ++i) {
+	write_threads.emplace_back(concurrent_writes, std::ref(storage), i * 100, (i + 1) * 100 - 1);
+  }
+  for (auto &t : write_threads) {
+	t.join();
   }
 
-  for (auto it = table.Scan("key1", "key3"); it.IsValid(); it.next()) {
-	std::cout << "Key: " << it.key() << ", Value: " << std::string(it.value().begin(), it.value().end()) << std::endl;
+  std::cout << "Number of immutable memtables: " << storage.GetImmutableMemTableCount() << std::endl;
+
+  storage.DebugPrintCurrentMemTable();
+
+  // concurrently read w 5 threads those vals
+  std::vector<std::vector<ReadResult>> all_results(5);
+  std::vector<std::thread> read_threads;
+  for (int i = 0; i < 5; ++i) {
+	read_threads.emplace_back(concurrent_reads, std::ref(storage), i * 100, (i + 1) * 100 - 1, std::ref(all_results[i]));
+  }
+  for (auto &t : read_threads) {
+	t.join();
+  }
+
+  for (const auto &thread_results : all_results) {
+	for (const auto &result : thread_results) {
+	  if (result.found) {
+		std::cout << "Read key" << result.key << ": " << result.value << std::endl;
+	  } else {
+		std::cout << "Key" << result.key << " not found" << std::endl;
+	  }
+	}
+  }
+  //
+  //  // freezing count check
+  //  std::cout << "Number of immutable memtables: " << storage.GetImmutableMemTableCount() << std::endl;
+  //
+  //  // can we remove ?
+
+  auto value = storage.Get("key495");
+  if (value) {
+	std::cout << "key495 exists: " << std::string(value->begin(), value->end()) << std::endl;
+  }
+  storage.Remove("key495");
+  auto removed_value = storage.Get("key495");
+  if (removed_value) {
+	std::cout << "key495 still exists: " << std::string(removed_value->begin(), removed_value->end()) << std::endl;
+  } else {
+	std::cout << "key495 removed successfully" << std::endl;
   }
 
   return 0;
