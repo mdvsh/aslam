@@ -48,6 +48,7 @@ class SkipList {
   [[nodiscard]] size_t size() const;
   [[nodiscard]] bool IsEmpty() const;
   void clear();
+  void printStructure() const;
 
   [[nodiscard]] std::vector<std::pair<K, V>> GetAllEntries() const;
 

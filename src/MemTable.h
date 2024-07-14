@@ -27,6 +27,7 @@ class MemTable {
   size_t Size() const;
   bool IsEmpty() const;
   void Clear();
+  void PrintStructure() const;
 
   size_t GetId() const { return _id; }
   size_t GetApproxSize() const { return approx_size.load(std::memory_order_relaxed); }

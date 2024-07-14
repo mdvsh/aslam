@@ -3,6 +3,7 @@
 //
 
 #include "SkipList.h"
+#include <iostream>
 
 template<typename K, typename V>
 const V SkipList<K, V>::TOMBSTONE = V();
@@ -14,6 +15,7 @@ SkipList<K, V>::SkipList(int maxLevel, float prob) : maxLevel(maxLevel), p(prob)
 {
   K minKey{};
   head = std::make_shared<Node>(minKey, V{}, maxLevel);
+  std::cout << "SkipList created with maxLevel: " << maxLevel << ", prob: " << prob << std::endl;
 }
 
 /*****************************************************************************/
@@ -41,15 +43,14 @@ void SkipList<K, V>::insert(const K &key, const V &value)
 	if (levelToPlaceAt > level) {
 	  for (int i = level; i < levelToPlaceAt; ++i)
 		nodesToUpdate[i] = head;
-
 	  level = levelToPlaceAt;
-	  auto newNode = std::make_shared<Node>(key, value, levelToPlaceAt);
+	}
 
-	  // connect list structure
-	  for (int i = 0; i < levelToPlaceAt; ++i) {
-		newNode->forward[i] = nodesToUpdate[i]->forward[i];
-		nodesToUpdate[i]->forward[i] = newNode;
-	  }
+	// connect list structure
+	auto newNode = std::make_shared<Node>(key, value, levelToPlaceAt);
+	for (int i = 0; i < levelToPlaceAt; ++i) {
+	  newNode->forward[i] = nodesToUpdate[i]->forward[i];
+	  nodesToUpdate[i]->forward[i] = newNode;
 	}
   }
 }
@@ -142,6 +143,24 @@ std::vector<std::pair<K, V>> SkipList<K, V>::GetAllEntries() const
 	  entries.emplace_back(it.key(), it.value());
   }
   return entries;
+}
+
+/*****************************************************************************/
+template<typename K, typename V>
+void SkipList<K, V>::printStructure() const
+/*****************************************************************************/
+{
+  std::cout << "SkipList Structure:\n";
+  for (int _level = this->level - 1; _level >= 0; _level--) {
+	std::cout << "Level " << _level << ": ";
+	auto node = head->forward[_level];
+	while (node != nullptr) {
+	  std::cout << "(" << node->key << ", " << node->value.size() << ") -> ";
+	  node = node->forward[_level];
+	}
+	std::cout << "nullptr\n";
+  }
+  std::cout << std::endl;
 }
 
 template class SkipList<std::string, std::vector<uint8_t>>;

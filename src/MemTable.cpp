@@ -74,3 +74,10 @@ bool MemTable::IsEmpty() const
 {
   return map.IsEmpty();
 }
+
+/*****************************************************************************/
+void MemTable::PrintStructure() const
+/*****************************************************************************/
+{
+  map.printStructure();
+}
