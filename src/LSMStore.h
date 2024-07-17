@@ -9,6 +9,8 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <spdlog/spdlog.h>
+#include <thread>
 
 class LSMStore {
  private:

@@ -56,7 +56,7 @@ void SkipList<K, V>::insert(const K &key, const V &value)
 
 /*****************************************************************************/
 template<typename K, typename V>
-std::optional<V> SkipList<K, V>::get(const K &key) const
+GetResultPair<V> SkipList<K, V>::get(const K &key) const
 /*****************************************************************************/
 {
   auto curr = head;
@@ -65,10 +65,14 @@ std::optional<V> SkipList<K, V>::get(const K &key) const
 	  curr = curr->forward[i];
 
   curr = curr->forward[0];
-  if (curr && curr->key == key && curr->value != TOMBSTONE)
-	return curr->value;
+  if (curr && curr->key == key) {
+	if (curr->value == TOMBSTONE)
+	  return {GetResult::Tombstone, V{}};
+	else
+	  return {GetResult::Found, curr->value};
+  }
 
-  return std::nullopt;
+  return {GetResult::NotFound, V{}};
 }
 
 /*****************************************************************************/
@@ -98,7 +102,7 @@ template<typename K, typename V>
 bool SkipList<K, V>::contains(const K &key) const
 /*****************************************************************************/
 {
-  return get(key).has_value();
+  return get(key).first != GetResult::NotFound;
 }
 
 /*****************************************************************************/

@@ -22,11 +22,11 @@ void MemTable::Put(std::string_view key, std::string_view value)
   map.insert(std::string(key), value_vec);
   approxSize.fetch_add(key.size() + value.size(), std::memory_order_relaxed);
 
-  std::cout << "Inserted key: " << key << " value: " << value << std::endl;
+  // std::cout << "Inserted key: " << key << " value: " << value << std::endl;
 }
 
 /*****************************************************************************/
-std::optional<std::vector<uint8_t>> MemTable::Get(std::string_view key) const
+GetResultPair<std::vector<uint8_t>> MemTable::Get(std::string_view key) const
 /*****************************************************************************/
 {
   std::shared_lock<std::shared_mutex> lock(rwMutex);
@@ -46,6 +46,7 @@ void MemTable::Remove(std::string_view key)
 /*****************************************************************************/
 {
   std::unique_lock<std::shared_mutex> lock(rwMutex);
+  std::cout << "Removing key: " << key << " from MemTable " << _id << std::endl;
   map.remove(std::string(key));
 }
 

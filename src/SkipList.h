@@ -10,6 +10,9 @@
 #include <random>
 #include <string_view>
 #include <vector>
+#include <utility>
+
+#include "LSMCommon.h"
 
 template<typename K, typename V>
 class SkipList {
@@ -41,7 +44,9 @@ class SkipList {
  public:
   SkipList(int maxLevel = 32, float prob = 0.5);
   void insert(const K &key, const V &value);
-  std::optional<V> get(const K &key) const;
+
+  [[nodiscard]] GetResultPair<V> get(const K &key) const;
+
   void remove(const K &key);
   bool contains(const K &key) const;
 

@@ -19,7 +19,7 @@ void LSMStore::freezeMemTable()
   auto newMemTable = std::make_unique<MemTable>(nextMemTableId++);
   {
 	std::unique_lock<std::shared_mutex> write_lock(storeSharedMutex);
-	std::cout << "\nFreezing MemTable " << activeMemTable->GetId() << " with size " << activeMemTable->GetApproxSize() << std::endl;
+	spdlog::debug("Freezing MemTable {} with size {}", activeMemTable->GetId(), activeMemTable->GetApproxSize());
 	immutableMemTables.push_back(std::move(activeMemTable));
 	activeMemTable = std::move(newMemTable);
 	std::cout << "\nCreated new MemTable " << activeMemTable->GetId() << std::endl;
@@ -36,6 +36,8 @@ void LSMStore::Put(std::string_view key, std::string_view value)
 	std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
 	activeMemTable->Put(key, value);
 	shouldFreeze = activeMemTable->GetApproxSize() >= memTableSizeLimit;
+	// std::cout << "k[" << key << "] v[" << value << "] id[" << activeMemTable->GetId() << "]\n"; 
+	spdlog::debug("k[{}] v[{}] id[{}]", key, value, activeMemTable->GetId());
   }
 
   if (shouldFreeze) {
@@ -58,15 +60,21 @@ std::optional<std::vector<uint8_t>> LSMStore::Get(std::string_view key) const
 /*****************************************************************************/
 {
   std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
-  auto res = activeMemTable->Get(key);
-  if (res)
-	return res;
+  spdlog::debug("Get key[{}] id[{}]", key, activeMemTable->GetId());
+
+  const auto [result, value] = activeMemTable->Get(key);
+  if (result == GetResult::Found)
+	return value;
+  else if (result == GetResult::Tombstone)
+	return std::nullopt;
 
   // reverse probe other (now) immut memTables
   for (auto it = immutableMemTables.rbegin(); it != immutableMemTables.rend(); ++it) {
-	res = (*it)->Get(key);
-	if (res)
-	  return res;
+	const auto [probResult, probValue] = (*it)->Get(key);
+	if (probResult == GetResult::Found)
+	  return probValue;
+	else if (probResult == GetResult::Tombstone)
+	  return std::nullopt;
   }
 
   return std::nullopt;
@@ -81,6 +89,7 @@ void LSMStore::Remove(std::string_view key)
 	std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
 	activeMemTable->Remove(key);
 	shouldFreeze = activeMemTable->GetApproxSize() >= memTableSizeLimit;
+	spdlog::debug("Remove key[{}] id[{}]", key, activeMemTable->GetId());
   }
 
   if (shouldFreeze) {

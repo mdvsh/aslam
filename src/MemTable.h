@@ -6,6 +6,7 @@
 #define ASLAM_SRC_MEMTABLE_H_
 
 #include "SkipList.h"
+#include "LSMCommon.h"
 
 #include <atomic>
 #include <shared_mutex>
@@ -23,7 +24,7 @@ class MemTable {
  public:
   MemTable(size_t id);
   void Put(std::string_view key, std::string_view value);
-  std::optional<std::vector<uint8_t>> Get(std::string_view key) const;
+  [[nodiscard]] GetResultPair<std::vector<uint8_t>> Get(std::string_view key) const;
   void Remove(std::string_view key);
   bool Contains(std::string_view key);
   size_t Size() const;

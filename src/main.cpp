@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <spdlog/spdlog.h>
 
 #include "LSMStore.h"
 #include "MemTable.h"
@@ -26,6 +27,7 @@ void concurrent_reads(const LSMStore &storage, int start, int end, std::vector<R
 
 int main() {
   std::cout << "aslam — an lsm tree storage engine...\n\n";
+  spdlog::set_level(spdlog::level::debug);
 
   LSMStore storage(1024);// 1KB memtable size limit
 
@@ -68,16 +70,16 @@ int main() {
   //
   //  // can we remove ?
 
-  auto value = storage.Get("key495");
+  auto value = storage.Get("key420");
   if (value) {
-	std::cout << "key495 exists: " << std::string(value->begin(), value->end()) << std::endl;
+	std::cout << "key420 exists: " << std::string(value->begin(), value->end()) << std::endl;
   }
-  storage.Remove("key495");
-  auto removed_value = storage.Get("key495");
+  storage.Remove("key420");
+  auto removed_value = storage.Get("key420");
   if (removed_value) {
-	std::cout << "key495 still exists: " << std::string(removed_value->begin(), removed_value->end()) << std::endl;
+	std::cout << "key420 still exists: " << std::string(removed_value->begin(), removed_value->end()) << std::endl;
   } else {
-	std::cout << "key495 removed successfully" << std::endl;
+	std::cout << "key420 removed successfully" << std::endl;
   }
 
   return 0;
