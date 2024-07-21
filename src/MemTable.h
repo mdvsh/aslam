@@ -5,8 +5,8 @@
 #ifndef ASLAM_SRC_MEMTABLE_H_
 #define ASLAM_SRC_MEMTABLE_H_
 
-#include "SkipList.h"
 #include "LSMCommon.h"
+#include "SkipList.h"
 
 #include <atomic>
 #include <shared_mutex>
@@ -37,15 +37,21 @@ class MemTable {
 
   // wrapper over SkipList
   class Iterator {
-   public:
-	Iterator(typename SkipList<std::string, std::vector<uint8_t>>::Iterator it) : iter(std::move(it)) {}
-	[[nodiscard]] bool IsValid() const { return iter.IsValid(); }
-	void next() { iter.next(); }
-	[[nodiscard]] std::string_view key() const { return iter.key(); }
-	[[nodiscard]] const std::vector<uint8_t> &value() const { return iter.value(); }
-
    private:
-	typename SkipList<std::string, std::vector<uint8_t>>::Iterator iter;
+	typename SkipList<std::string, std::vector<uint8_t>>::Iterator current;
+	typename SkipList<std::string, std::vector<uint8_t>>::Iterator end;
+
+   public:
+	Iterator(typename SkipList<std::string, std::vector<uint8_t>>::Iterator begin,
+			 typename SkipList<std::string, std::vector<uint8_t>>::Iterator end)
+		: current(std::move(begin)), end(std::move(end)) {}
+
+	[[nodiscard]] bool IsValid() const { return current != end; }
+	void next() {
+	  if (IsValid()) ++current;
+	}
+	[[nodiscard]] std::string_view key() const { return current.key(); }
+	[[nodiscard]] const std::vector<uint8_t> &value() const { return current.value(); }
   };
 
   Iterator Scan(std::string_view lower, std::string_view upper) const;

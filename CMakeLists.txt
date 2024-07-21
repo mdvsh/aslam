@@ -16,6 +16,7 @@ add_executable(aslam src/main.cpp
         src/LSMStore.cpp
         src/LSMStore.h
         src/LSMCommon.h
+        src/MergeIterator.h
 )
 
 target_link_libraries(aslam PRIVATE Threads::Threads spdlog::spdlog)

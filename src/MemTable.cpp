@@ -6,6 +6,7 @@
 #include "SkipList.h"
 
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 /*****************************************************************************/
 MemTable::MemTable(size_t id) : _id(id), approxSize(0)
@@ -21,8 +22,6 @@ void MemTable::Put(std::string_view key, std::string_view value)
   std::vector<uint8_t> value_vec(value.begin(), value.end());
   map.insert(std::string(key), value_vec);
   approxSize.fetch_add(key.size() + value.size(), std::memory_order_relaxed);
-
-  // std::cout << "Inserted key: " << key << " value: " << value << std::endl;
 }
 
 /*****************************************************************************/
@@ -38,7 +37,8 @@ MemTable::Iterator MemTable::Scan(std::string_view lower, std::string_view upper
 /*****************************************************************************/
 {
   std::shared_lock<std::shared_mutex> lock(rwMutex);
-  return {map.lowerBound(std::string(lower))};
+  auto [begin, end] = map.Range(std::string(lower), std::string(upper));
+  return {std::move(begin), std::move(end)};
 }
 
 /*****************************************************************************/
@@ -46,7 +46,7 @@ void MemTable::Remove(std::string_view key)
 /*****************************************************************************/
 {
   std::unique_lock<std::shared_mutex> lock(rwMutex);
-  std::cout << "Removing key: " << key << " from MemTable " << _id << std::endl;
+  spdlog::debug("Removing key: {} from MemTable {}", key, _id);
   map.remove(std::string(key));
 }
 

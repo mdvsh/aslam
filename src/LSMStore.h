@@ -6,6 +6,7 @@
 #define ASLAM_SRC_LSMSTORE_H_
 
 #include "MemTable.h"
+#include "MergeIterator.h"
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -25,6 +26,7 @@ class LSMStore {
 
  public:
   explicit LSMStore(size_t sizeLimit);
+  std::unique_ptr<MergeIterator> Scan(std::string_view start, std::string_view end) const;
 
   void Put(std::string_view key, std::string_view value);
   [[nodiscard]] std::optional<std::vector<uint8_t>> Get(std::string_view key) const;

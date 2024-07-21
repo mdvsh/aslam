@@ -22,7 +22,6 @@ void LSMStore::freezeMemTable()
 	spdlog::debug("Freezing MemTable {} with size {}", activeMemTable->GetId(), activeMemTable->GetApproxSize());
 	immutableMemTables.push_back(std::move(activeMemTable));
 	activeMemTable = std::move(newMemTable);
-	std::cout << "\nCreated new MemTable " << activeMemTable->GetId() << std::endl;
   }
   // post lock hold flush to disk (?)
 }
@@ -36,8 +35,7 @@ void LSMStore::Put(std::string_view key, std::string_view value)
 	std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
 	activeMemTable->Put(key, value);
 	shouldFreeze = activeMemTable->GetApproxSize() >= memTableSizeLimit;
-	// std::cout << "k[" << key << "] v[" << value << "] id[" << activeMemTable->GetId() << "]\n"; 
-	spdlog::debug("k[{}] v[{}] id[{}]", key, value, activeMemTable->GetId());
+	// spdlog::debug("k[{}] v[{}] id[{}]", key, value, activeMemTable->GetId());
   }
 
   if (shouldFreeze) {
@@ -60,7 +58,7 @@ std::optional<std::vector<uint8_t>> LSMStore::Get(std::string_view key) const
 /*****************************************************************************/
 {
   std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
-  spdlog::debug("Get key[{}] id[{}]", key, activeMemTable->GetId());
+  // spdlog::debug("Get key[{}] id[{}]", key, activeMemTable->GetId());
 
   const auto [result, value] = activeMemTable->Get(key);
   if (result == GetResult::Found)
@@ -115,6 +113,20 @@ size_t LSMStore::GetImmutableMemTableCount() const
 void LSMStore::DebugPrintCurrentMemTable() const
 /*****************************************************************************/
 {
-	std::shared_lock<std::shared_mutex> lock(storeSharedMutex);
-	activeMemTable->PrintStructure();
+  std::shared_lock<std::shared_mutex> lock(storeSharedMutex);
+  activeMemTable->PrintStructure();
+}
+
+/*****************************************************************************/
+std::unique_ptr<MergeIterator> LSMStore::Scan(std::string_view start, std::string_view end) const
+/*****************************************************************************/
+{
+  std::vector<std::unique_ptr<MemTable::Iterator>> iters;
+  {
+	std::shared_lock<std::shared_mutex> read_lock(storeSharedMutex);
+	iters.push_back(std::make_unique<MemTable::Iterator>(activeMemTable->Scan(start, end)));
+	for (const auto &oldMemTable : immutableMemTables)
+	  iters.push_back(std::make_unique<MemTable::Iterator>(oldMemTable->Scan(start, end)));
+  }
+  return std::make_unique<MergeIterator>(std::move(iters));
 }

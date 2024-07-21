@@ -29,12 +29,12 @@ $ make
   - [x] freezing and multiple tables
   - [x] concurrency
     - [x] stress test for correctness
-    - [ ] todo: fix delete with multiple tables
-- [ ] mergeiterator
+    - [x] todo: fix delete with multiple tables
+- [x] mergeiterator
 - [ ] sorted strign table (sst) encoding
-- [ ] compaction and persistence
+- [ ] bloom filter for sst optimization
+- [ ] level compaction and persistence
 - [ ] write-ahead log
-- [ ] bloom filter
 - [ ] _future?_
 
 ### benchmark

@@ -1,9 +1,10 @@
 #include <iostream>
-#include <thread>
 #include <spdlog/spdlog.h>
+#include <thread>
 
 #include "LSMStore.h"
 #include "MemTable.h"
+#include "MergeIterator.h"
 
 // for concurrent reads logging
 struct ReadResult {
@@ -51,19 +52,20 @@ int main() {
   for (int i = 0; i < 5; ++i) {
 	read_threads.emplace_back(concurrent_reads, std::ref(storage), i * 100, (i + 1) * 100 - 1, std::ref(all_results[i]));
   }
+
   for (auto &t : read_threads) {
 	t.join();
   }
 
-  for (const auto &thread_results : all_results) {
-	for (const auto &result : thread_results) {
-	  if (result.found) {
-		std::cout << "Read key" << result.key << ": " << result.value << std::endl;
-	  } else {
-		std::cout << "Key" << result.key << " not found" << std::endl;
-	  }
-	}
-  }
+  // for (const auto &thread_results : all_results) {
+  // for (const auto &result : thread_results) {
+  //   if (result.found) {
+  // 	std::cout << "Read key" << result.key << ": " << result.value << std::endl;
+  //   } else {
+  // 	std::cout << "Key" << result.key << " not found" << std::endl;
+  //   }
+  // }
+  // }
   //
   //  // freezing count check
   //  std::cout << "Number of immutable memtables: " << storage.GetImmutableMemTableCount() << std::endl;
@@ -80,6 +82,14 @@ int main() {
 	std::cout << "key420 still exists: " << std::string(removed_value->begin(), removed_value->end()) << std::endl;
   } else {
 	std::cout << "key420 removed successfully" << std::endl;
+  }
+
+  auto mergeIter = storage.Scan("", "key42");
+  spdlog::debug("Merged Iterator scan test:\n");
+  while (mergeIter->IsValid()) {
+	auto val = mergeIter->Value();
+	spdlog::debug("key: {} value: {}", mergeIter->Key(), std::string(val.begin(), val.end()));
+	mergeIter->Next();
   }
 
   return 0;

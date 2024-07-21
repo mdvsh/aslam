@@ -9,8 +9,8 @@
 #include <optional>
 #include <random>
 #include <string_view>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "LSMCommon.h"
 
@@ -59,12 +59,21 @@ class SkipList {
 
   class Iterator {
    public:
-	Iterator(std::shared_ptr<Node> node) : curr(node) {}
+	explicit Iterator(std::shared_ptr<Node> node) : curr(node) {}
 	[[nodiscard]] bool IsValid() const { return curr != nullptr; }
 	void next() { curr = curr->forward[0]; }
 	const K &key() const { return curr->key; }
 	const V &value() const { return curr->value; }
 	bool operator!=(const Iterator &other) const { return curr != other.curr; }
+	Iterator &operator++() {
+	  if (curr) curr = curr->forward[0];
+	  return *this;
+	}
+	Iterator operator++(int) {
+	  Iterator tmp = *this;
+	  ++(*this);
+	  return tmp;
+	}
 
    private:
 	std::shared_ptr<Node> curr;
@@ -73,6 +82,11 @@ class SkipList {
   Iterator begin() const { return Iterator(head->forward[0]); }
   Iterator end() const { return Iterator(nullptr); }
   Iterator lowerBound(const K &key) const;
+  std::pair<Iterator, Iterator> Range(const K &lower, const K &upper) const {
+	auto lowerItr = lowerBound(lower);
+	auto upperItr = lowerBound(upper);
+	return {lowerItr, upperItr};
+  }
 };
 
 #endif//ASLAM_SRC_SKIPLIST_H_
